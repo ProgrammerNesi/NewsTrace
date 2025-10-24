@@ -76,7 +76,7 @@ export default function Home() {
                 onChange={(e) => setOutletName(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="e.g., The New York Times, BBC News, CNN..."
-                className="w-full h-24 p-4 border-2 border-gray-200 rounded-xl resize-none focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all duration-300 text-lg placeholder-gray-400"
+                className="w-full h-24 p-4 border-2 border-gray-200 rounded-xl resize-none focus:border-blue-500 focus:ring-4 focus:ring-blue-200 transition-all duration-300 text-lg placeholder-gray-400 text-black font-semibold"
                 disabled={loading}
               />
               <div className="absolute bottom-3 right-3 text-sm text-gray-400">
