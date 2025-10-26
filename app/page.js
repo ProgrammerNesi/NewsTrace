@@ -4,7 +4,9 @@ import { useState } from "react";
 export default function Home() {
   const [outletName, setOutletName] = useState("");
   const [websiteURL, setWebsiteURL] = useState("");
+  const [journalists, setJournalists] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [extractLoading, setExtractLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit() {
@@ -16,6 +18,7 @@ export default function Home() {
     setLoading(true);
     setError("");
     setWebsiteURL("");
+    setJournalists([]);
 
     try {
       console.log("submitted", outletName);
@@ -43,6 +46,42 @@ export default function Home() {
     }
   }
 
+  async function handleExtractJournalists() {
+    if (!websiteURL) {
+      setError("Please detect website first");
+      return;
+    }
+
+    setExtractLoading(true);
+    setError("");
+    setJournalists([]);
+
+    try {
+      console.log("Extracting journalists from:", websiteURL);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/extract-journalists`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ website_url: websiteURL })
+      });
+      
+      const data = await res.json();
+      console.log(data);
+      
+      if (data.status === "success") {
+        setJournalists(data.journalists);
+      } else {
+        setError(data.error || "Failed to extract journalists");
+      }
+    } catch (err) {
+      setError("Failed to connect to server");
+      console.error(err);
+    } finally {
+      setExtractLoading(false);
+    }
+  }
+
   const handleKeyPress = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -52,7 +91,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
+      <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-800 mb-4">
@@ -64,7 +103,7 @@ export default function Home() {
         </div>
 
         {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8 transform transition-all duration-300 hover:shadow-3xl">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
           <div className="mb-8">
             <label htmlFor="outlet-input" className="block text-sm font-semibold text-gray-700 mb-3">
               Enter News Outlet Name
@@ -88,7 +127,7 @@ export default function Home() {
           <button
             onClick={handleSubmit}
             disabled={loading || !outletName.trim()}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mb-4"
           >
             {loading ? (
               <div className="flex items-center justify-center">
@@ -99,11 +138,29 @@ export default function Home() {
               "🔍 Detect Official Website"
             )}
           </button>
+
+          {/* NEW: Extract Journalists Button */}
+          {websiteURL && (
+            <button
+              onClick={handleExtractJournalists}
+              disabled={extractLoading}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {extractLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-3"></div>
+                  Extracting Journalists...
+                </div>
+              ) : (
+                "👥 Extract Journalists"
+              )}
+            </button>
+          )}
         </div>
 
-        {/* Results Section */}
+        {/* Website Results Section */}
         {websiteURL && (
-          <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6 animate-fade-in">
+          <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-6 mb-6 animate-fade-in">
             <div className="flex items-start">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -132,6 +189,39 @@ export default function Home() {
           </div>
         )}
 
+        {/* Journalists Results Section */}
+        {journalists.length > 0 && (
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-6 mb-6 animate-fade-in">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-2xl">👥</span>
+                </div>
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-semibold text-purple-800 mb-4">
+                  Found {journalists.length} Journalists
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                  {journalists.map((journalist, index) => (
+                    <div key={index} className="bg-white rounded-lg p-4 border border-purple-200">
+                      <h4 className="font-semibold text-purple-700 mb-2">{journalist.name}</h4>
+                      <a 
+                        href={journalist.profile_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 break-all"
+                      >
+                        {journalist.profile_url}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error Section */}
         {error && (
           <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 animate-fade-in">
@@ -144,7 +234,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="ml-4">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">Detection Failed</h3>
+                <h3 className="text-lg font-semibold text-red-800 mb-2">Error</h3>
                 <p className="text-red-700">{error}</p>
               </div>
             </div>
