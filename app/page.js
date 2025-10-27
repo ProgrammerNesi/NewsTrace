@@ -100,6 +100,9 @@ export default function Home() {
           <p className="text-xl text-gray-600">
             Media Intelligence & Journalist Profiling System
           </p>
+           <p className="text-lg pt-2 text-gray-600">
+            Server sleeps and it might take a bit longer to respond for the first request.
+          </p>
         </div>
 
         {/* Main Card */}
